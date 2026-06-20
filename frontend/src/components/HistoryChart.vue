@@ -1,11 +1,10 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 
-const MAX = 60;
-
 const props = defineProps<{
   cpuHistory: number[];
   ramHistory: number[];
+  maxHistory: number;
 }>();
 
 // SVG viewBox: x 0-600 maps to time, y 0-100 maps to 100%-0% (inverted).
@@ -14,7 +13,7 @@ const props = defineProps<{
 function toSmoothPath(data: number[]): string {
   if (data.length < 2) return '';
   const pts = data.map((v, i) => ({
-    x: (i / (MAX - 1)) * 600,
+    x: (i / (props.maxHistory - 1)) * 600,
     y: 100 - v,
   }));
   let d = `M ${pts[0].x.toFixed(1)},${pts[0].y.toFixed(1)}`;
@@ -34,7 +33,7 @@ const ramLine = computed(() => toSmoothPath(props.ramHistory));
 <template>
   <div class="chart-card">
     <div class="chart-header">
-      <span class="chart-label">History <span class="sub">(last 60 s)</span></span>
+      <span class="chart-label">History <span class="sub">(last {{ maxHistory }} s)</span></span>
       <div class="legend">
         <span class="dot" style="background: #4ade80"></span>CPU
         <span class="dot" style="background: #60a5fa"></span>RAM

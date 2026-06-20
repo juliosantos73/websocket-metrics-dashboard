@@ -2,7 +2,10 @@
 import { ref, onMounted, onUnmounted } from 'vue';
 import HistoryChart from './components/HistoryChart.vue';
 
-const MAX_HISTORY = 60;
+interface Config {
+  interval: number;
+  maxHistory: number;
+}
 
 interface Metrics {
   cpu: number;
@@ -10,6 +13,7 @@ interface Metrics {
   timestamp: number;
 }
 
+const config = ref<Config>({ interval: 1000, maxHistory: 60 });
 const cpu = ref(0);
 const ram = ref(0);
 const cpuHistory = ref<number[]>([]);
@@ -23,7 +27,12 @@ function barColor(value: number): string {
   return '#22c55e';
 }
 
-onMounted(() => {
+onMounted(async () => {
+  // REST: fetch server config before opening the WebSocket connection
+  const res = await fetch('http://localhost:3000/config');
+  config.value = await res.json() as Config;
+
+  // WebSocket: open persistent channel for real-time metrics
   ws = new WebSocket('ws://localhost:3000/metrics');
 
   ws.onopen = () => { status.value = 'Connected'; };
@@ -32,8 +41,8 @@ onMounted(() => {
     const data = JSON.parse(event.data) as Metrics;
     cpu.value = data.cpu;
     ram.value = data.ram;
-    cpuHistory.value = [...cpuHistory.value, data.cpu].slice(-MAX_HISTORY);
-    ramHistory.value = [...ramHistory.value, data.ram].slice(-MAX_HISTORY);
+    cpuHistory.value = [...cpuHistory.value, data.cpu].slice(-config.value.maxHistory);
+    ramHistory.value = [...ramHistory.value, data.ram].slice(-config.value.maxHistory);
   };
 
   ws.onerror = () => { status.value = 'Error'; };
@@ -51,6 +60,12 @@ onUnmounted(() => {
       <h1>Server Metrics</h1>
       <span :class="['badge', status.toLowerCase()]">{{ status }}</span>
     </header>
+
+    <p class="config-info">
+      updating every {{ config.interval / 1000 }} s
+      &nbsp;·&nbsp;
+      history: {{ config.maxHistory }} data points
+    </p>
 
     <div class="cards">
       <div class="card">
@@ -75,7 +90,11 @@ onUnmounted(() => {
         <div class="card-value">{{ ram }}%</div>
       </div>
 
-      <HistoryChart :cpu-history="cpuHistory" :ram-history="ramHistory" />
+      <HistoryChart
+        :cpu-history="cpuHistory"
+        :ram-history="ramHistory"
+        :max-history="config.maxHistory"
+      />
     </div>
   </div>
 </template>
@@ -96,13 +115,19 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   gap: 1rem;
-  margin-bottom: 2.5rem;
+  margin-bottom: 0.5rem;
 }
 
 h1 {
   font-size: 1.75rem;
   font-weight: 700;
   margin: 0;
+}
+
+.config-info {
+  font-size: 0.75rem;
+  color: #475569;
+  margin-bottom: 2rem;
 }
 
 .badge {

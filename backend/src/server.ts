@@ -1,9 +1,17 @@
 import Fastify from 'fastify';
+import fastifyCors from '@fastify/cors';
 import fastifyWebsocket from '@fastify/websocket';
 import os from 'os';
 
 const app = Fastify({ logger: false });
+
+app.register(fastifyCors, { origin: true });
 app.register(fastifyWebsocket);
+
+const config = {
+  interval: 1000,
+  maxHistory: 60,
+};
 
 function cpuSnapshot() {
   let idle = 0, total = 0;
@@ -17,7 +25,10 @@ function cpuSnapshot() {
 }
 
 app.register(async (fastify) => {
-  // Real system metrics — compares CPU snapshots between each tick
+  // REST — returns server configuration consumed by the frontend before opening WS
+  fastify.get('/config', async () => config);
+
+  // WebSocket — real system metrics
   fastify.get('/metrics', { websocket: true }, (socket) => {
     console.log('Client connected [real metrics].');
     let prev = cpuSnapshot();
@@ -32,7 +43,7 @@ app.register(async (fastify) => {
       const ram = Math.round(100 * (1 - os.freemem() / os.totalmem()));
 
       socket.send(JSON.stringify({ cpu, ram, timestamp: Date.now() }));
-    }, 1000);
+    }, config.interval);
 
     socket.on('close', () => {
       console.log('Client disconnected [real metrics].');
@@ -40,7 +51,7 @@ app.register(async (fastify) => {
     });
   });
 
-  // Random metrics — useful for demos and UI testing without real system data
+  // WebSocket — random metrics for demos and UI testing
   fastify.get('/metrics/random', { websocket: true }, (socket) => {
     console.log('Client connected [random metrics].');
 
@@ -50,7 +61,7 @@ app.register(async (fastify) => {
         ram: Math.floor(Math.random() * 100),
         timestamp: Date.now(),
       }));
-    }, 1000);
+    }, config.interval);
 
     socket.on('close', () => {
       console.log('Client disconnected [random metrics].');
@@ -61,6 +72,7 @@ app.register(async (fastify) => {
 
 app.listen({ port: 3000, host: '0.0.0.0' }, (err) => {
   if (err) throw err;
-  console.log('WebSocket server running at ws://localhost:3000/metrics');
-  console.log('Random metrics available at  ws://localhost:3000/metrics/random');
+  console.log('REST endpoint:    http://localhost:3000/config');
+  console.log('WebSocket:        ws://localhost:3000/metrics');
+  console.log('WebSocket random: ws://localhost:3000/metrics/random');
 });
