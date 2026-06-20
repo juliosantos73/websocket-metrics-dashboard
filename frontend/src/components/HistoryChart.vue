@@ -8,16 +8,27 @@ const props = defineProps<{
   ramHistory: number[];
 }>();
 
-// SVG viewBox: x 0-600 maps to time, y 0-100 maps to 100%-0% (inverted)
-function toPolyline(data: number[]): string {
+// SVG viewBox: x 0-600 maps to time, y 0-100 maps to 100%-0% (inverted).
+// Uses cubic Bézier curves (C command): control points share the midpoint X
+// between consecutive data points, producing smooth S-curves.
+function toSmoothPath(data: number[]): string {
   if (data.length < 2) return '';
-  return data
-    .map((v, i) => `${((i / (MAX - 1)) * 600).toFixed(1)},${(100 - v).toFixed(1)}`)
-    .join(' ');
+  const pts = data.map((v, i) => ({
+    x: (i / (MAX - 1)) * 600,
+    y: 100 - v,
+  }));
+  let d = `M ${pts[0].x.toFixed(1)},${pts[0].y.toFixed(1)}`;
+  for (let i = 1; i < pts.length; i++) {
+    const p0 = pts[i - 1];
+    const p1 = pts[i];
+    const mx = ((p0.x + p1.x) / 2).toFixed(1);
+    d += ` C ${mx},${p0.y.toFixed(1)} ${mx},${p1.y.toFixed(1)} ${p1.x.toFixed(1)},${p1.y.toFixed(1)}`;
+  }
+  return d;
 }
 
-const cpuLine = computed(() => toPolyline(props.cpuHistory));
-const ramLine = computed(() => toPolyline(props.ramHistory));
+const cpuLine = computed(() => toSmoothPath(props.cpuHistory));
+const ramLine = computed(() => toSmoothPath(props.ramHistory));
 </script>
 
 <template>
@@ -49,21 +60,19 @@ const ramLine = computed(() => toPolyline(props.ramHistory));
           stroke="#334155" stroke-width="0.5"
         />
 
-        <polyline
-          :points="cpuLine"
+        <path
+          :d="cpuLine"
           fill="none"
           stroke="#4ade80"
           stroke-width="1.5"
-          stroke-linejoin="round"
           stroke-linecap="round"
         />
 
-        <polyline
-          :points="ramLine"
+        <path
+          :d="ramLine"
           fill="none"
           stroke="#60a5fa"
           stroke-width="1.5"
-          stroke-linejoin="round"
           stroke-linecap="round"
         />
       </svg>
