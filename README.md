@@ -32,9 +32,12 @@ Browser (Vue.js)                  Server (Fastify)
 
 ## Features
 
+- Real CPU and RAM usage from the host machine (no mocking)
 - Server push at 1-second intervals — no polling required
 - Colour-coded progress bars (green → amber → red) reflecting load levels
+- Real-time history line chart (last 60 seconds, CPU + RAM on the same graph)
 - Reactive status badge (Connecting / Connected / Disconnected / Error)
+- `/metrics/random` endpoint available for UI demos without real system data
 - Memory-safe: `clearInterval` is called the moment the client disconnects
 - Clean, type-safe code — TypeScript on both ends
 
@@ -72,10 +75,11 @@ npm run dev
 
 The backend and frontend start concurrently:
 
-| Service  | URL                              |
-|----------|----------------------------------|
-| Backend  | `ws://localhost:3000/metrics`    |
-| Frontend | `http://localhost:5173`          |
+| Service         | URL                                     |
+|-----------------|-----------------------------------------|
+| Backend (real)  | `ws://localhost:3000/metrics`           |
+| Backend (random)| `ws://localhost:3000/metrics/random`    |
+| Frontend        | `http://localhost:5173`                 |
 
 Open `http://localhost:5173` in your browser and watch the metrics update in real time.
 

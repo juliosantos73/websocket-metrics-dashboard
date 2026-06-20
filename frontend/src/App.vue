@@ -1,5 +1,8 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue';
+import HistoryChart from './components/HistoryChart.vue';
+
+const MAX_HISTORY = 60;
 
 interface Metrics {
   cpu: number;
@@ -9,6 +12,8 @@ interface Metrics {
 
 const cpu = ref(0);
 const ram = ref(0);
+const cpuHistory = ref<number[]>([]);
+const ramHistory = ref<number[]>([]);
 const status = ref<'Connecting' | 'Connected' | 'Disconnected' | 'Error'>('Connecting');
 let ws: WebSocket | null = null;
 
@@ -27,6 +32,8 @@ onMounted(() => {
     const data = JSON.parse(event.data) as Metrics;
     cpu.value = data.cpu;
     ram.value = data.ram;
+    cpuHistory.value = [...cpuHistory.value, data.cpu].slice(-MAX_HISTORY);
+    ramHistory.value = [...ramHistory.value, data.ram].slice(-MAX_HISTORY);
   };
 
   ws.onerror = () => { status.value = 'Error'; };
@@ -67,6 +74,8 @@ onUnmounted(() => {
         </div>
         <div class="card-value">{{ ram }}%</div>
       </div>
+
+      <HistoryChart :cpu-history="cpuHistory" :ram-history="ramHistory" />
     </div>
   </div>
 </template>

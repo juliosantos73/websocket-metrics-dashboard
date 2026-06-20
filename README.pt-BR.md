@@ -32,9 +32,12 @@ Navegador (Vue.js)                Servidor (Fastify)
 
 ## Funcionalidades
 
+- CPU e RAM reais da máquina hospedeira (sem simulação)
 - Server push a cada 1 segundo — sem polling
 - Barras de progresso com cores dinâmicas (verde → âmbar → vermelho) indicando nível de carga
+- Gráfico de linha com histórico em tempo real (últimos 60 segundos, CPU + RAM no mesmo gráfico)
 - Badge de status reativo (Conectando / Conectado / Desconectado / Erro)
+- Endpoint `/metrics/random` disponível para demos de UI sem dados reais do sistema
 - Seguro contra vazamento de memória: `clearInterval` é chamado assim que o cliente desconecta
 - Código limpo e tipado — TypeScript nos dois lados
 
@@ -72,10 +75,11 @@ npm run dev
 
 Backend e frontend sobem de forma concorrente:
 
-| Serviço  | URL                              |
-|----------|----------------------------------|
-| Backend  | `ws://localhost:3000/metrics`    |
-| Frontend | `http://localhost:5173`          |
+| Serviço            | URL                                     |
+|--------------------|-----------------------------------------|
+| Backend (real)     | `ws://localhost:3000/metrics`           |
+| Backend (aleatório)| `ws://localhost:3000/metrics/random`    |
+| Frontend           | `http://localhost:5173`                 |
 
 Acesse `http://localhost:5173` no navegador e observe as métricas atualizando em tempo real.
 
