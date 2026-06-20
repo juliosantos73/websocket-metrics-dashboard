@@ -28,6 +28,18 @@ app.register(async (fastify) => {
   // REST — returns server configuration consumed by the frontend before opening WS
   fastify.get('/config', async () => config);
 
+  // REST — updates server configuration; new interval applies to future WS connections
+  fastify.patch('/config', async (req) => {
+    const body = req.body as Partial<typeof config>;
+    if (typeof body.interval === 'number' && body.interval >= 200) {
+      config.interval = body.interval;
+    }
+    if (typeof body.maxHistory === 'number' && body.maxHistory >= 10) {
+      config.maxHistory = body.maxHistory;
+    }
+    return config;
+  });
+
   // WebSocket — real system metrics
   fastify.get('/metrics', { websocket: true }, (socket) => {
     console.log('Client connected [real metrics].');

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue';
 import HistoryChart from './components/HistoryChart.vue';
+import ConfigPanel from './components/ConfigPanel.vue';
 
 interface Config {
   interval: number;
@@ -33,10 +34,17 @@ onMounted(async () => {
   config.value = await res.json() as Config;
 
   // WebSocket: open persistent channel for real-time metrics
+  connectWs();
+});
+
+function connectWs() {
+  ws?.close();
+  cpuHistory.value = [];
+  ramHistory.value = [];
+  status.value = 'Connecting';
+
   ws = new WebSocket('ws://localhost:3000/metrics');
-
   ws.onopen = () => { status.value = 'Connected'; };
-
   ws.onmessage = (event: MessageEvent) => {
     const data = JSON.parse(event.data) as Metrics;
     cpu.value = data.cpu;
@@ -44,10 +52,15 @@ onMounted(async () => {
     cpuHistory.value = [...cpuHistory.value, data.cpu].slice(-config.value.maxHistory);
     ramHistory.value = [...ramHistory.value, data.ram].slice(-config.value.maxHistory);
   };
-
   ws.onerror = () => { status.value = 'Error'; };
   ws.onclose = () => { status.value = 'Disconnected'; };
-});
+}
+
+function onConfigUpdated(updated: Config) {
+  const intervalChanged = updated.interval !== config.value.interval;
+  config.value = updated;
+  if (intervalChanged) connectWs();
+}
 
 onUnmounted(() => {
   ws?.close();
@@ -95,6 +108,8 @@ onUnmounted(() => {
         :ram-history="ramHistory"
         :max-history="config.maxHistory"
       />
+
+      <ConfigPanel :config="config" @updated="onConfigUpdated" />
     </div>
   </div>
 </template>
