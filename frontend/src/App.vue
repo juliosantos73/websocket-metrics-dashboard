@@ -238,6 +238,11 @@ h1 {
 
 /* dialog */
 .settings-dialog {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  margin: 0;
   background: #1e293b;
   border: 1px solid #334155;
   border-radius: 0.75rem;
