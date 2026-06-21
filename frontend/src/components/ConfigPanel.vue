@@ -77,7 +77,8 @@ async function save() {
     </button>
 
     <p class="reconnect-note">
-      Interval changes reconnect the WebSocket automatically.
+      Interval changes will reconnect the WebSocket automatically.
+      History size takes effect immediately.
     </p>
   </div>
 </template>
